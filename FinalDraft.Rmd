@@ -1,0 +1,121 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Scientific Question: 
+
+Are MERS-CoV and SARS-CoV spike proteins also very different from the HIV-1 spike proteins? How much more similar or different are they when compared to the similarity score between 2019-nCoV and HIV-1 spike proteins?
+
+Spike proteins are membrane proteins of many viruses that allows for their entry into the host cells. Here we are examining the spike proteins of four viruses: HIV-1, SARS-CoV, SARS-CoV-2, and MERS-CoV. HIV-1 envelop spike (Env) is the spike protein of HIV-1,  human immunodeficiency virus, (Dev et al. 2016). It has been compared against the spike protein of SARS-CoV-2, bringing up the possibility that it could be an artificial virus; however, it was rejected by showing that there was not enough evidence that HIV-1 spike and SARS-CoV-2 spike proteins had a significant level of similarity to propose that SARS-CoV-2 was artificially made in correlation to HIV-1 (Zhang et al. 2020). To test if the spike proteins of all coronaviruses have the same level of resemblance to HIV-1, or if SARS-CoV-2 is an anomaly, the spike proteins of SARS-CoV-2, MERS-CoV, and SARS-CoV were compared against the Env and there similarity scores will be compared against each other. MERS-CoV (Zhang et al. 2018) and SARS-CoV-2 (Wrapp et al. 2020) spike proteins had homo sapiens as the expression system, while Env was expressed in the E. coli (Dev et al. 2016) and SARS-CoV spike protein was expressed in Spodoptera frugiperda (Gui et al. 2017).
+______________________________________________________________________________
+
+Scientific Hypothesis:
+
+If the protein sequences of HIV-1 spike proteins are compared to those of other coronaviruses, then some level of similarity will appear that matches the similarity score when compared against the 2019-nCoV (with some variability) because they are from a common, coronavirus group.
+
+There will be first pairwise alignment and p-value of the scores done to compare numerically and see how closely (or not closely) the coronaviruses' spike proteins resemble the HIV-1 spike protein. Then, a dotplot will be drawn to visually see each pairwise sequence alignment.
+______________________________________________________________________________
+
+Packages:
+
+1) seqinr
+2) BioConductor -- Biostrings
+3) ggplot2
+
+Here is how I ran the packages:
+
+```{r}
+#Open package "seqinr"
+
+library("seqinr")
+
+
+#Installing Bioconductor R package - Biostrings
+
+if(!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("Biostrings")
+library("Biostrings")
+
+
+#Installing ggplot2
+
+install.packages("ggplot2")
+library("ggplot2")
+
+```
+
+BiocManager has many codes that can analyze biological experimental data. Biostrings will be used for pairwise alignment. seqinr has codes to read FASTA files. msa packages can conduct multiple sequence alignment.
+______________________________________________________________________________
+
+I need to read the FASTA files of the protein sequences with read.fasta(). I saved each individual sequence to the proper names, respectively. Then, I converted these FASTA files into usable sequence format.
+
+```{r}
+#Read FASTA files
+
+HIVS <- read.fasta(file = "rcsb_pdb_5JYN.fasta")
+SARS_spike <- read.fasta(file = "rcsb_pdb_5WRG.fasta")
+MERS_spike <- read.fasta(file = "rcsb_pdb_5ZXV.fasta")
+novel_CoV_spike <- read.fasta(file = "rcsb_pdb_6VSB.fasta")
+
+
+#Covert to Seq
+
+HIVS_seq <- HIVS[[1]]
+SARS_spike_seq <- SARS_spike[[1]]
+MERS_spike_seq <- MERS_spike[[1]]
+novel_CoV_spike_seq <- novel_CoV_spike[[1]]
+```
+______________________________________________________________________________
+
+Using the package, "Biostrings," I conducted pairwise alignment between each coronavirus and HIV-1 spike protein sequence and saved them into respective files. I, then, printed the alignment and extracted the similarity scores. The values were saved into their own files as well.
+
+```{r}
+#Pairwise Alignment
+
+library("Biostrings")
+
+globalAlignSARS_HIV <- pairwiseAlignment(pattern = "SARS_spike_seq", subject = "HIVS_seq") 
+globalAlignMERS_HIV <- pairwiseAlignment(pattern = "MERS_spike_seq", subject = "HIVS_seq") 
+globalAlignnovelCoV_HIV <- pairwiseAlignment(pattern = "novel_CoV_spike_seq", subject = "HIVS_seq") 
+
+
+#Print
+
+globalAlignSARS_HIV
+globalAlignMERS_HIV
+globalAlignnovelCoV_HIV
+
+
+#Extracting the Score of Each Alignment
+
+ScoreSARS <- score(globalAlignSARS_HIV)
+ScoreMERS <- score(globalAlignMERS_HIV)
+ScoreNCoV <- score(globalAlignnovelCoV_HIV)
+```
+Here we can see that there is one score, novel Coronavirus, that is different from the other two coronaviruses. Moreoever, the score is much lower than the other two coronaviruses' level of similarity to HIV-1. This could mean that there is even less of a similarity between HIV-1 and SARS-CoV-2 and therefore is more likely not an artificial virus.
+
+______________________________________________________________________________
+
+Each score were printed into an x argument and then run on a one sample t-test which compares each value to the mean and see if the numbers do not display a close resemblance overall.
+
+```{r}
+#P-Value between Similarity Scores
+
+x = c(ScoreSARS, ScoreMERS, ScoreNCoV)
+t.test(x)
+```
+Here, the p-test shows us that the p-value between the three score is 0.04542, which is smaller than 0.05 and therefore cannot reject the null hypothesis that there is a statistically significant difference between the three numbers. Knowing from the previous codes that the one score that was different from the others was the novel covid, we could see that 1) novel covid has a great difference between the other two coronaviruses.
+______________________________________________________________________________
+
+I will be making a visual of the pairwise alignments using dotplot from ggplot2.
+
+```{r}
+#Making dotplots of HIV spike protein vs. coronavirus spike proteins
+
+dotPlot(HIVS_seq, SARS_spike_seq)
+dotPlot(HIVS_seq, MERS_spike_seq)
+dotPlot(HIVS_seq, novel_CoV_spike_seq)
+```
+We can observe the different dotplots between HIV-1 spike protein and the three coronavirus spike proteins. We can see here that the alignments are more spersed out for the novel coronavirus vs. HIV spike proteins, and this could be the reason why the similarity score between the two are much lower than the other two coronaviruses, SARS and MERS. 
+
